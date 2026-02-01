@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>أكاديمية مس رولا</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Cairo', sans-serif;
+            background-color: #f0fdf4;
+            touch-action: none;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .hand-container { transition: transform 0.1s cubic-bezier(0.4, 2.0, 0.5, 1); }
+        .no-trans { transition: none !important; }
+        .chalkboard {
+            background-color: #1e293b;
+            border: 6px solid #b45309;
+            border-radius: 16px;
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.5);
+        }
+        .btn-push { transition: transform 0.1s; }
+        .btn-push:active { transform: scale(0.95); }
+    </style>
+</head>
+<body class="bg-green-50">
+
+    <!-- Header -->
+    <div class="w-full max-w-lg px-4 pt-4 pb-2">
+        <div class="bg-white p-4 rounded-2xl shadow-sm border-b-4 border-green-500 flex justify-between items-center">
+            <div>
+                <h1 class="text-xl font-black text-green-700">أكاديمية مس رولا 🎓</h1>
+                <p class="text-xs text-gray-500 font-bold">تحدي قراءة الساعة</p>
+            </div>
+            <div id="score-box" class="hidden bg-yellow-100 px-4 py-1 rounded-xl border border-yellow-300 flex flex-col items-center">
+                <span class="text-[10px] text-yellow-800 font-bold">النجوم</span>
+                <span id="score-val" class="text-xl font-black text-yellow-600">0</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Card -->
+    <div class="w-full max-w-lg flex-1 bg-white rounded-t-[2rem] shadow-2xl p-6 mt-2 relative border-t border-green-100 overflow-y-auto">
+        
+        <!-- MENU -->
+        <div id="menu-screen" class="space-y-3 pb-10">
+            <h2 class="text-center font-bold text-gray-600 mb-2 text-lg">اختر نوع التحدي:</h2>
+            
+            <button onclick="setMode('learn')" class="btn-push w-full bg-blue-100 p-3 rounded-2xl flex items-center justify-between border-r-4 border-blue-400">
+                <div class="text-right"><div class="font-bold text-blue-900">التدريب الحر</div><div class="text-xs text-blue-700">حرك العقارب وتعلم</div></div>
+                <span class="text-3xl">🛠️</span>
+            </button>
+
+            <button onclick="setMode('match-analog')" class="btn-push w-full bg-purple-100 p-3 rounded-2xl flex items-center justify-between border-r-4 border-purple-400">
+                <div class="text-right"><div class="font-bold text-purple-900">اضبط العقارب</div><div class="text-xs text-purple-700">اقرأ الرقم وحرك الساعة</div></div>
+                <span class="text-3xl">👆</span>
+            </button>
+
+            <button onclick="setMode('match-digital')" class="btn-push w-full bg-pink-100 p-3 rounded-2xl flex items-center justify-between border-r-4 border-pink-400">
+                <div class="text-right"><div class="font-bold text-pink-900">الساعة الرقمية</div><div class="text-xs text-pink-700">اضبط الأرقام حسب العقارب</div></div>
+                <span class="text-3xl">🔢</span>
+            </button>
+
+            <button onclick="setMode('words-quiz')" class="btn-push w-full bg-green-100 p-3 rounded-2xl flex items-center justify-between border-r-4 border-green-400">
+                <div class="text-right"><div class="font-bold text-green-900">تحدي الكلمات</div><div class="text-xs text-green-700">اختر العبارة الصحيحة</div></div>
+                <span class="text-3xl">📝</span>
+            </button>
+
+            <button onclick="setMode('words-to-clock')" class="btn-push w-full bg-orange-100 p-3 rounded-2xl flex items-center justify-between border-r-4 border-orange-400">
+                <div class="text-right"><div class="font-bold text-orange-900">من الكلمات إلى الساعة</div><div class="text-xs text-orange-700">اضبط العقارب والأرقام معاً</div></div>
+                <span class="text-3xl">✍️</span>
+            </button>
+        </div>
+
+        <!-- GAME AREA -->
+        <div id="game-screen" class="hidden flex flex-col items-center gap-4 pb-10">
+            <div class="w-full bg-green-50 border border-green-200 p-3 rounded-xl text-center min-h-[70px] flex items-center justify-center relative">
+                <p id="instruction-text" class="text-lg font-bold text-green-900 leading-tight">...</p>
+            </div>
+
+            <!-- CLOCK SVG -->
+            <div class="relative w-64 h-64">
+                <svg viewBox="0 0 200 200" class="w-full h-full drop-shadow-xl">
+                    <circle cx="100" cy="100" r="95" fill="white" stroke="#15803d" stroke-width="6" />
+                    <g id="clock-face"></g>
+                    <g transform="translate(100,100)">
+                        <g id="h-hand-grp" class="hand-container">
+                            <path d="M -4 5 L -2 -50 L 2 -50 L 4 5 Z" fill="#1e1b4b" />
+                        </g>
+                        <g id="m-hand-grp" class="hand-container">
+                            <path d="M -3 10 L -1 -75 L 1 -75 L 3 10 Z" fill="#ef4444" />
+                            <circle cx="0" cy="-60" r="3" fill="white"/>
+                        </g>
+                        <circle cx="0" cy="0" r="6" fill="#ef4444" stroke="white" stroke-width="2" />
+                    </g>
+                    <circle id="touch-layer" cx="100" cy="100" r="100" fill="transparent" class="cursor-pointer" />
+                </svg>
+            </div>
+
+            <!-- DIGITAL AREA -->
+            <div id="digital-area" class="w-full" dir="ltr">
+                <div class="chalkboard p-2 flex justify-center items-center gap-4 relative">
+                    <!-- Hours (Left) -->
+                    <div class="flex flex-col items-center w-16">
+                        <button onclick="adjustTime('h', 1)" class="text-gray-400 p-1 mb-1 dig-btn text-xl">▲</button>
+                        <span id="disp-h" class="text-white text-5xl font-mono font-bold">12</span>
+                        <button onclick="adjustTime('h', -1)" class="text-gray-400 p-1 mt-1 dig-btn text-xl">▼</button>
+                    </div>
+                    <span class="text-gray-500 text-4xl pb-4">:</span>
+                    <!-- Minutes (Right) -->
+                    <div class="flex flex-col items-center w-16">
+                        <button onclick="adjustTime('m', 1)" class="text-gray-400 p-1 mb-1 dig-btn text-xl">▲</button>
+                        <span id="disp-m" class="text-white text-5xl font-mono font-bold">00</span>
+                        <button onclick="adjustTime('m', -1)" class="text-gray-400 p-1 mt-1 dig-btn text-xl">▼</button>
+                    </div>
+                    <div id="digital-lock" class="hidden absolute inset-0 bg-black/20 rounded-lg cursor-not-allowed"></div>
+                </div>
+                <div id="text-readout" dir="rtl" class="text-center mt-2 text-indigo-800 font-black text-md min-h-[30px]"></div>
+            </div>
+
+            <div id="choices-area" class="hidden w-full grid grid-cols-1 gap-2"></div>
+
+            <button id="check-btn" onclick="checkAnswer()" class="btn-push w-full bg-yellow-400 hover:bg-yellow-500 text-yellow-900 font-black py-4 rounded-2xl shadow-lg text-xl">
+                تحقق من الإجابة ✅
+            </button>
+
+            <button onclick="goHome()" class="btn-push w-full bg-red-100 hover:bg-red-200 text-red-800 font-bold py-3 rounded-xl mt-4 border-2 border-red-200">
+                رجوع للقائمة الرئيسية 🏠
+            </button>
+        </div>
+    </div>
+
+    <!-- FEEDBACK MODAL -->
+    <div id="modal" class="fixed inset-0 bg-black/60 hidden flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+        <div class="bg-white p-8 rounded-[2rem] text-center w-full max-sm shadow-2xl">
+            <div id="modal-icon" class="text-7xl mb-4"></div>
+            <h3 id="modal-title" class="text-2xl font-black mb-2"></h3>
+            <p id="modal-msg" class="text-gray-500 mb-6 font-bold"></p>
+            <button id="modal-btn" class="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold text-lg shadow-lg">استمر</button>
+        </div>
+    </div>
+
+    <script>
+        const state = { mode: 'menu', h: 12, m: 0, th: 0, tm: 0, inputH: 12, inputM: 0, score: 0, dragging: false };
+        const els = {
+            menu: document.getElementById('menu-screen'), game: document.getElementById('game-screen'),
+            hHand: document.getElementById('h-hand-grp'), mHand: document.getElementById('m-hand-grp'),
+            dispH: document.getElementById('disp-h'), dispM: document.getElementById('disp-m'),
+            instr: document.getElementById('instruction-text'), readout: document.getElementById('text-readout'),
+            checkBtn: document.getElementById('check-btn'), scoreBox: document.getElementById('score-box'),
+            scoreVal: document.getElementById('score-val'), digLock: document.getElementById('digital-lock'),
+            choices: document.getElementById('choices-area'), modal: document.getElementById('modal')
+        };
+
+        function timeToWords(h, m) {
+            const hours = ["", "الواحدة", "الثانية", "الثالثة", "الرابعة", "الخامسة", "السادسة", "السابعة", "الثامنة", "التاسعة", "العاشرة", "الحادية عشرة", "الثانية عشرة"];
+            let hText = hours[h === 0 || h === 12 ? 12 : h % 12];
+            let nextH = h === 12 ? 1 : (h % 12) + 1;
+            let nextHText = hours[nextH];
+
+            if (m === 0) return `الساعة ${hText} تماماً`;
+            if (m === 15) return `الساعة ${hText} والربع`;
+            if (m === 20) return `الساعة ${hText} والثلث`;
+            if (m === 30) return `الساعة ${hText} والنصف`;
+            if (m === 40) return `الساعة ${nextHText} إلا ثلثاً`;
+            if (m === 45) return `الساعة ${nextHText} إلا ربعاً`;
+            if (m === 50) return `الساعة ${nextHText} إلا عشرة`;
+            if (m === 55) return `الساعة ${nextHText} إلا خمسة`;
+            if (m === 5) return `الساعة ${hText} وخمس دقائق`;
+            if (m === 10) return `الساعة ${hText} وعشر دقائق`;
+            return `الساعة ${hText} و ${m} دقيقة`;
+        }
+
+        function init() {
+            const face = document.getElementById('clock-face');
+            for(let i=1; i<=12; i++) {
+                const ang = (i * 30) * Math.PI / 180;
+                const x = 100 + 72 * Math.sin(ang), y = 100 - 72 * Math.cos(ang);
+                const t = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                t.setAttribute("x", x); t.setAttribute("y", y); t.setAttribute("text-anchor", "middle"); t.setAttribute("dominant-baseline", "middle");
+                t.setAttribute("fill", "#15803d"); t.setAttribute("font-weight", "900"); t.setAttribute("font-size", "18"); t.style.fontFamily = "Cairo";
+                t.textContent = i; face.appendChild(t);
+                for(let j=1; j<5; j++) {
+                   const mAng = ((i-1)*30 + j*6) * Math.PI/180;
+                   const x1 = 100 + 88 * Math.sin(mAng), y1 = 100 - 88 * Math.cos(mAng);
+                   const x2 = 100 + 92 * Math.sin(mAng), y2 = 100 - 92 * Math.cos(mAng);
+                   const l = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                   l.setAttribute("x1",x1); l.setAttribute("y1",y1); l.setAttribute("x2",x2); l.setAttribute("y2",y2);
+                   l.setAttribute("stroke", "#d1d5db"); l.setAttribute("stroke-width", "1"); face.appendChild(l);
+                }
+            }
+            updateDisplay();
+        }
+
+        function updateDisplay() {
+            const mRot = state.m * 6;
+            const hRot = (state.h % 12) * 30 + (state.m * 0.5);
+            els.mHand.setAttribute("transform", `rotate(${mRot})`);
+            els.hHand.setAttribute("transform", `rotate(${hRot})`);
+
+            if (state.mode === 'match-digital' || state.mode === 'words-to-clock') {
+                els.dispH.textContent = state.inputH;
+                els.dispM.textContent = state.inputM.toString().padStart(2, '0');
+            } else {
+                els.dispH.textContent = state.h === 0 ? 12 : state.h;
+                els.dispM.textContent = state.m.toString().padStart(2, '0');
+            }
+            
+            els.readout.textContent = state.mode === 'learn' ? timeToWords(state.h, state.m) : "";
+        }
+
+        function setMode(m) {
+            state.mode = m;
+            els.menu.classList.add('hidden'); els.game.classList.remove('hidden');
+            els.scoreBox.classList.remove('hidden'); els.checkBtn.classList.remove('hidden');
+            els.digLock.classList.add('hidden'); els.choices.classList.add('hidden');
+            if (m === 'learn') {
+                els.scoreBox.classList.add('hidden'); els.checkBtn.classList.add('hidden');
+                state.h = 3; state.m = 0;
+            } else { nextQuestion(); }
+            updateDisplay();
+        }
+
+        function nextQuestion() {
+            els.modal.classList.add('hidden');
+            const r = Math.random();
+            let randM = r < 0.6 ? Math.floor(Math.random() * 12) * 5 : Math.floor(Math.random() * 60);
+            state.th = Math.floor(Math.random() * 12) + 1; state.tm = randM;
+            
+            // Standard reset for mode changes
+            els.digLock.classList.add('hidden'); 
+
+            if (state.mode === 'match-analog') {
+                state.h = 12; state.m = 0; 
+                els.digLock.classList.remove('hidden');
+                els.instr.innerHTML = `حرك عقارب الساعة لتطابق الوقت: <br/> <span dir="ltr" class="font-mono text-3xl text-indigo-700">${state.th}:${state.tm.toString().padStart(2,'0')}</span>`;
+            } else if (state.mode === 'match-digital') {
+                state.h = state.th; state.m = state.tm; state.inputH = 12; state.inputM = 0;
+                els.instr.textContent = "انظر للعقارب واضبط الساعة الرقمية";
+            } else if (state.mode === 'words-quiz') {
+                state.h = state.th; state.m = state.tm; 
+                els.digLock.classList.remove('hidden');
+                els.checkBtn.classList.add('hidden'); els.choices.classList.remove('hidden');
+                els.instr.textContent = "اختر العبارة الصحيحة لهذا الوقت";
+                generateChoices();
+            } else if (state.mode === 'words-to-clock') {
+                // In this mode, BOTH are interactive. Resetting values:
+                state.h = 12; state.m = 0; state.inputH = 12; state.inputM = 0;
+                // DO NOT add digLock here, because user needs to use digital buttons
+                const targetText = timeToWords(state.th, state.tm);
+                els.instr.innerHTML = `اضبط العقارب والأرقام لتطابق الجملة: <br/><span class="text-indigo-700 text-xl font-black">${targetText}</span>`;
+            }
+            updateDisplay();
+        }
+
+        function generateChoices() {
+            els.choices.innerHTML = '';
+            const correct = timeToWords(state.th, state.tm);
+            let d1 = timeToWords(state.th === 12 ? 1 : state.th + 1, state.tm);
+            let d2 = timeToWords(state.th, (state.tm + 30) % 60);
+            let d3 = timeToWords(state.th, (state.tm + 15) % 60);
+            let opts = [...new Set([correct, d1, d2, d3])].sort(() => Math.random() - 0.5);
+            opts.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = "w-full bg-white border-2 border-indigo-200 text-indigo-900 p-2 rounded-xl font-bold shadow-sm hover:bg-indigo-50 active:scale-95 transition text-md";
+                btn.textContent = opt; btn.onclick = () => showFeedback(opt === correct);
+                els.choices.appendChild(btn);
+            });
+        }
+
+        function adjustTime(unit, val) {
+            if (state.mode === 'match-digital' || state.mode === 'words-to-clock') {
+                if (unit === 'h') { 
+                    state.inputH += val; 
+                    if(state.inputH > 12) state.inputH = 1; 
+                    if(state.inputH < 1) state.inputH = 12; 
+                } else { 
+                    state.inputM += val; 
+                    if(state.inputM >= 60) { state.inputM = 0; state.inputH = (state.inputH % 12) + 1; } 
+                    if(state.inputM < 0) { state.inputM = 59; state.inputH = (state.inputH === 1 ? 12 : state.inputH - 1); } 
+                }
+            } else if (state.mode === 'match-analog' || state.mode === 'learn') {
+                if (unit === 'h') { state.h += val; if (state.h > 12) state.h = 1; if (state.h < 1) state.h = 12; }
+                else { state.m += val; if (state.m >= 60) { state.m = 0; state.h = (state.h % 12) + 1; } if (state.m < 0) { state.m = 59; state.h = (state.h === 1 ? 12 : state.h - 1); } }
+            }
+            updateDisplay();
+        }
+
+        function getAngle(e) {
+            const r = document.getElementById('touch-layer').getBoundingClientRect();
+            const cx = e.touches ? e.touches[0].clientX : e.clientX;
+            const cy = e.touches ? e.touches[0].clientY : e.clientY;
+            let deg = Math.atan2(cy - (r.top + r.height/2), cx - (r.left + r.width/2)) * 180 / Math.PI + 90;
+            if(deg < 0) deg += 360; return deg;
+        }
+
+        function handleMove(e) {
+            if (!state.dragging || state.mode === 'match-digital' || state.mode === 'words-quiz') return;
+            const deg = getAngle(e);
+            const nm = Math.round(deg / 6) % 60;
+            if (nm !== state.m) {
+                if (state.m > 50 && nm < 10) { state.h = (state.h % 12) + 1; }
+                else if (state.m < 10 && nm > 50) { state.h = (state.h === 1 ? 12 : state.h - 1); }
+                state.m = nm; updateDisplay();
+            }
+        }
+
+        function checkAnswer() {
+            let win = false;
+            if (state.mode === 'match-analog') win = (state.h === state.th && state.m === state.tm);
+            else if (state.mode === 'match-digital') win = (state.inputH === state.th && state.inputM === state.tm);
+            else if (state.mode === 'words-to-clock') {
+                const analogWin = (state.h === state.th && state.m === state.tm);
+                const digitalWin = (state.inputH === state.th && state.inputM === state.tm);
+                win = analogWin && digitalWin;
+            }
+            showFeedback(win);
+        }
+
+        function showFeedback(win) {
+            els.modal.classList.remove('hidden');
+            const icon = document.getElementById('modal-icon'), title = document.getElementById('modal-title'), msg = document.getElementById('modal-msg'), btn = document.getElementById('modal-btn');
+            if(win) {
+                state.score += 15; els.scoreVal.textContent = state.score;
+                icon.textContent = "🌟"; title.textContent = "أحسنت!"; title.className = "text-2xl font-black mb-2 text-green-600";
+                msg.textContent = "أنت رائع في قراءة الساعة!"; btn.onclick = nextQuestion; btn.textContent = "السؤال التالي";
+            } else {
+                icon.textContent = "🤔"; title.textContent = "حاول مرة أخرى"; title.className = "text-2xl font-black mb-2 text-orange-500";
+                msg.textContent = "تأكد من مطابقة العقارب والأرقام للوقت المطلوب"; btn.onclick = () => els.modal.classList.add('hidden'); btn.textContent = "إغلاق";
+            }
+        }
+
+        function goHome() { els.game.classList.add('hidden'); els.menu.classList.remove('hidden'); }
+        
+        const surf = document.getElementById('touch-layer');
+        surf.onmousedown = surf.ontouchstart = (e) => { 
+            if (state.mode === 'match-digital' || state.mode === 'words-quiz') return;
+            state.dragging = true; els.mHand.classList.add('no-trans'); els.hHand.classList.add('no-trans'); 
+            handleMove(e); if(e.type === 'touchstart') e.preventDefault(); 
+        };
+        window.onmousemove = window.ontouchmove = handleMove;
+        window.onmouseup = window.ontouchend = () => { 
+            state.dragging = false; 
+            els.mHand.classList.remove('no-trans'); 
+            els.hHand.classList.remove('no-trans'); 
+        };
+        init();
+    </script>
+</body>
+</html>
